@@ -9,7 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "canny-edge-detector": "^1.0.0",
     "fs-extra": "^7.0.1",
-    "jpeg-js": "^0.3.4"
+    "jpeg-js": "^0.3.4",
+    "opencv4nodejs": "^4.14.0"
   }
 }
