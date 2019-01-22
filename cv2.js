@@ -102,13 +102,16 @@ const searchDirRecurse = (dirName) => {
 }
 searchDirRecurse('./src/');
 
-(async () => {
-    for (let i = 0; i < filePaths.length; i++) {
-        try {
-            const res = await contour(filePaths[i]);
-
-        } catch(e) {
-            console.err(e)
+const loop = async (i) => {
+    try {
+        const res = await contour(filePaths[i]);
+        if (i <= filePaths.length) {
+          loop(i + 1);
         }
+
+    } catch(e) {
+        console.err(e)
     }
-})()
+}
+
+loop(0);
