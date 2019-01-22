@@ -3,69 +3,85 @@ const fs = require('fs-extra');
 const path = require('path');
 
 
-const outDir = `out_${Date.now()}`;
+const outDir = `cv2out`;
+
+fs.mkdirp(outDir);
+
+var GREEN = [0, 255, 0]; // B, G, R
+var WHITE = [255, 255, 255]; // B, G, R
+var RED   = [0, 0, 255]; // B, G, R
+
 
 const contour = (imgPath) => {
-    cv.readImage(imgPath, function (err, img) {
-        if (err) {
-            throw err;
-        }
-
-        const width = img.width();
-        const height = img.height();
-
-        if (width < 1 || height < 1) {
-            throw new Error('Image has no size');
-        }
-
-        // do some cool stuff with img
-
-        img.convertGrayscale();
-        img.gaussianBlur([3, 3]);
-        const lowThresh = 0;
-        const highThresh = 150;
-        const iterations = 2;
-
-        img.canny(lowThresh, highThresh);
-        img.dilate(iterations);
-
-        img.save(outDir + '/dilated_' +  path.basename(imgPath));
-
-        var GREEN = [0, 255, 0]; // B, G, R
-        var WHITE = [255, 255, 255]; // B, G, R
-        var RED   = [0, 0, 255]; // B, G, R
-
-        let contours = img.findContours();
-        let largestContourImg;
-        let largestArea = 0;
-        let largestAreaIndex;
-        const lineType = 8;
-        const maxLevel = 0;
-        const thickness = 1;
-
-        for (let i = 0; i < contours.size(); i++) {
-            if (contours.area(i) > largestArea) {
-            largestArea = contours.area(i);
-            largestAreaIndex = i;
+    const p = new Promise((resolve, reject) => {
+        cv.readImage(imgPath, function (err, img) {
+            if (err) {
+                reject();
+                throw err;
             }
-        }
 
-        var big = new cv.Matrix(height, width);
-        var all = new cv.Matrix(height, width);
+            const width = img.width();
+            const height = img.height();
 
-        big.drawContour(contours, largestAreaIndex, GREEN, thickness, lineType);
-        all.drawAllContours(contours, WHITE);
+            if (width < 1 || height < 1) {
+                throw new Error('Image has no size');
+            }
 
-        fs.mkdirp(outDir);
-        // save img
-        big.save(outDir + '/' +  path.basename(imgPath));
-        all.save(outDir + '/all_' +  path.basename(imgPath));
+            // do some cool stuff with img
+            img.convertGrayscale();
+            img.gaussianBlur([3, 3]);
+            const lowThresh = 0;
+            const highThresh = 150;
+            const iterations = 2;
+
+            img.canny(lowThresh, highThresh);
+            img.dilate(iterations);
+
+            let contours = img.findContours();
+
+            let largestArea = 0;
+            let largestAreaIndex;
+
+            const lineType = 8;
+            const thickness = 3;
+
+            const poly = new cv.Matrix(height, width);
+            const big = new cv.Matrix(height, width);
+            const all = new cv.Matrix(height, width);
+
+
+            for (let i = 0; i < contours.size(); i++) {
+                if (contours.area(i) > largestArea) {
+                    largestArea = contours.area(i);
+                    largestAreaIndex = i;
+                }
+            }
+
+            big.drawContour(contours, largestAreaIndex, GREEN, thickness, lineType);
+            all.drawAllContours(contours, WHITE);
+
+            for (let i = 0; i < contours.size(); i++) {
+                let arcLength = contours.arcLength(i, true);
+                contours.approxPolyDP(i, arcLength * 0.05, true);
+                poly.drawContour(contours, i, RED, thickness);
+            }
+
+            // save img
+            big.save(outDir + '/' +  path.basename(imgPath));
+            all.save(outDir + '/all_' +  path.basename(imgPath));
+            poly.save(outDir + '/poly_' +  path.basename(imgPath));
+
+            resolve();
+        });
     });
+
+    return p;
 };
 
 
 
 const filterJPG = (filename) => /\.jpe?g$/i.test(filename);
+const filePaths = [];
 const searchDirRecurse = (dirName) => {
   const files = fs.readdirSync(dirName)
   for (let file of files) {
@@ -78,11 +94,21 @@ const searchDirRecurse = (dirName) => {
           if (filterJPG(file)) {
             console.log(file)
             const absFilePath = path.resolve(filePath)
-            contour(absFilePath)
-
+            // contour(absFilePath)
+            filePaths.push(absFilePath)
           }
       }
   }
 }
-
 searchDirRecurse('./src/');
+
+(async () => {
+    for (let i = 0; i < filePaths.length; i++) {
+        try {
+            const res = await contour(filePaths[i]);
+
+        } catch(e) {
+            console.err(e)
+        }
+    }
+})()
