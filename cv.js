@@ -10,7 +10,7 @@ const getHistAxis = (channel) => ([
     }
   ]);
 
-const img = cv.imread('./src/1-1.JPG');
+const img = cv.imread('./src/4-3.JPG');
 
 const grayImg = img.bgrToGray();
 
@@ -30,7 +30,7 @@ const grayImg2 = dilated.convertTo(cv.CV_8UC1);
 
 const WHITE = [255, 255, 255];
 let contours = grayImg2.findContours(2, 1);
-let largestContourImg;
+let largestContour;
 let largestArea = 0;
 let largestAreaIndex;
 
@@ -40,12 +40,20 @@ for (let i = 0; i < contours.length; i++) {
   if (contours[i].area > largestArea) {
     largestArea = contours[i].area;
     largestAreaIndex = i;
+    largestContour = contours[i];
   }
 }
 
-console.log(largestContourImg);
-const contour = img.drawContours(contours, new cv.Vec3(200, 200, 200) ,largestAreaIndex,);
+
+const contour = grayImg2.drawContours(contours, new cv.Vec3(200, 200, 200) ,largestAreaIndex,);
 
 
-cv.imshow('blur', contour);
+let arcLength = largestContour.arcLength(true);
+
+
+const poly = largestContour.approxPolyDP(arcLength * 0.05, true);
+
+// const contour2 = poly.drawContours(contours, new cv.Vec3(200, 200, 200) ,largestAreaIndex,);
+
+cv.imshow('blur', contour2);
 cv.waitKey();
