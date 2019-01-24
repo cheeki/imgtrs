@@ -14,5 +14,9 @@
     "jpeg-js": "^0.3.4",
     "opencv": "^6.0.0",
     "opencv4nodejs": "^4.14.0"
+  },
+  "devDependencies": {
+    "cryptiles": ">=4.1.2",
+    "hoek": ">=4.2.1"
   }
 }
